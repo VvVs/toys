@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body style="display: flex; justify-content: center; align-items: center">
+    <canvas id="canvas" width="600px" height="600px"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas')
+        const context = canvas.getContext('2d')
+        const girdSize = 600
+        const cellSize = 3
+        const rows = Math.floor(girdSize / cellSize)
+        const cols = Math.floor(girdSize / cellSize)
+
+        let ant = {
+            x: Math.floor(cols / 2),
+            y: Math.floor(rows / 2),
+            direction: 0
+        }
+
+        const grid = Array.from({ length: rows }, () => Array(cols).fill(0))
+
+        /**
+         * 渲染格子
+         * @param x
+         * @param y
+         * @param color
+         */
+        function drawCell(x, y, color) {
+            context.fillStyle = color
+            context.fillRect(x * cellSize, y * cellSize, cellSize, cellSize)
+        }
+
+        function update() {
+            let current = grid[ant.x][ant.y]
+            if (current == 0) {
+                grid[ant.x][ant.y] = 1
+                ant.direction = (ant.direction + 1) % 4
+                drawCell(ant.x, ant.y, '#000')
+            } else {
+                grid[ant.x][ant.y] = 0
+                ant.direction = (ant.direction + 3) % 4
+                drawCell(ant.x, ant.y, '#fff')
+            }
+
+            // 向前走一步
+            switch (ant.direction) {
+                case 0:
+                    ant.y = (ant.y - 1 + rows) % rows
+                    break
+                case 1:
+                    ant.x = (ant.x + 1) % cols
+                    break
+                case 2:
+                    ant.y = (ant.y + 1) % rows
+                    break
+                case 3:
+                    ant.x = (ant.x - 1 + cols) % cols
+            }
+
+            drawCell(ant.x, ant.y, 'red')
+            requestAnimationFrame(update)
+        }
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                context.strokeStyle = '#ccc'
+                context.strokeRect(r * cellSize, c * cellSize, cellSize, cellSize)
+            }
+        }
+
+        update()
+    </script>
+</body>
+</html>
