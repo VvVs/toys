@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schulte Table</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+
+        #app {
+            position: relative;
+            width: 500px;
+            margin: 100px auto 0;
+        }
+
+        .tabel {
+            display: flex;
+            flex-wrap: wrap;
+            width: 500px;
+            border-top: 1px solid #000;
+            border-left: 1px solid #000;
+        }
+
+        .item {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid #000;
+            border-bottom: 1px solid #000;
+            box-sizing: border-box;
+
+            font-size: 50px;
+            font-weight: bold;
+        }
+
+        .restart-btn {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        倒计时：<span id="countdown">{{ countdown }}</span>
+
+        <div class="tabel">
+            <div v-for="row in table" :key="row" class="item" :style="{ 
+                        color : row.color, 
+                        backgroundColor : 
+                            currentClick == row.value 
+                            ? (isRight == 1 ? 'green' : isRight == 2 ? 'red' : '')
+                            : '' 
+                        }" @click="checkClick(row)">
+                {{ row.value }}
+            </div>
+        </div>
+
+        <button @click="initTable" style="margin-top: 20px;">重新开始</button>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    countdown: 30,
+                    table: [],
+                    size: 5, // 5x5 舒尔特表格
+                    colors: ['blue', 'orange', 'back', 'red', 'purple'],
+                    checkNumber: 1,
+                    isRight: 0,
+                    currentClick: 0,
+                    timer: null,
+                    answer: []
+                }
+            },
+
+            created() {
+                this.initTable()
+            },
+
+            watch: {
+                answer: {
+                    handler(newVal, oldVal) {
+                        console.log(newVal)
+                        if (newVal.length == this.size * this.size) {
+                            alert(`恭喜你完成了舒尔特表格！耗时：${30 - this.countdown}秒`)
+                            clearInterval(this.timer)
+                        }
+                    },
+                    deep: true
+                }
+            },
+
+            methods: {
+                initTable() {
+                    if (this.timer) clearInterval(this.timer)
+
+                    // 创建一个5x5的表格
+                    const tableSize = this.size * this.size;
+
+                    const numbers = Array.from({ length: tableSize }, (_, i) => i + 1);
+                    numbers.sort(() => Math.random() - 0.5);
+
+                    // 为每个单元格分配颜色，确保行列不重复
+                    this.table = [];
+
+                    for (let row = 0; row < this.size; row++) {
+                        for (let col = 0; col < this.size; col++) {
+                            // 获取当前位置的索引
+                            const index = row * this.size + col;
+
+                            // 获取可用的颜色（排除当前行和列已使用的颜色）
+                            const usedColorsInRow = this.getUsedColorsInRow(row);
+                            const usedColorsInCol = this.getUsedColorsInCol(col);
+                            const usedColors = [...usedColorsInRow, ...usedColorsInCol];
+
+                            // 找出可用的颜色
+                            const availableColors = this.colors.filter(color => !usedColors.includes(color));
+
+                            // 如果没有可用颜色，就从所有颜色中随机选择一个
+                            // 这种情况在颜色数量少于行/列数量时可能发生
+                            let color;
+                            if (availableColors.length > 0) {
+                                color = availableColors[Math.floor(Math.random() * availableColors.length)];
+                            } else {
+                                color = this.colors[Math.floor(Math.random() * this.colors.length)];
+                            }
+
+                            // 添加到表格中
+                            this.table.push({
+                                value: numbers[index],
+                                color: color,
+                                row: row,
+                                col: col
+                            });
+                        }
+                    }
+
+                    this.checkNumber = 1
+                    this.currentClick = 0
+                    this.countdown = 30
+                    this.answer = []
+                    this.startCountdown()
+                },
+
+                // 获取指定行已使用的颜色
+                getUsedColorsInRow(row) {
+                    return this.table
+                        .filter(cell => cell.row === row)
+                        .map(cell => cell.color);
+                },
+
+                // 获取指定列已使用的颜色
+                getUsedColorsInCol(col) {
+                    return this.table
+                        .filter(cell => cell.col === col)
+                        .map(cell => cell.color);
+                },
+
+                // 重新生成表格
+                tableRandom() {
+                    this.initTable();
+                },
+
+                // 倒计时
+                startCountdown() {
+                    this.countdown = 30
+                    this.timer = setInterval(() => {
+                        this.countdown--
+                        if (this.countdown <= 0) {
+                            clearInterval(this.timer)
+                            // 隐藏数字
+                            this.table = []
+                            alert(`时间到！你只完成了${this.answer.length}个数字`)
+                        }
+                    }, 1000)
+                },
+
+                checkClick(row) {
+                    this.currentClick = row.value
+
+                    if (row.value == this.checkNumber) {
+                        this.checkNumber++
+                        this.isRight = 1
+                        this.answer.push(row.value)
+                    } else {
+                        this.isRight = 2
+                    }
+                }
+            }
+        })
+        app.mount('#app')
+    </script>
+</body>
+
+</html>

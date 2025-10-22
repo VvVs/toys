@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MutilColor</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        #app {
+            width: 440px;
+            margin: 100px auto 0;
+        }
+
+        .wrap {
+            display: flex;
+            flex-wrap: wrap;
+            width: 440px;
+        }
+
+        .item {
+            padding: 5px 10px;
+            font-size: 50px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <div class="wrap">
+            <div v-for="item in items" :key="item" class="item" :style="{ color: item.color }">
+                {{ item.text }}
+            </div>
+        </div>
+        <button @click="initTable" style="margin-top: 20px;">重新开始</button>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const app = Vue.createApp({
+            el: '#app',
+            data() {
+                return {
+                    items: [
+
+                    ]
+                }
+            },
+            created() {
+                this.initTable()
+            },
+            methods: {
+                initTable() {
+                    const color = ['#db0216', '#00e62d', '#4163f8', '#000000']
+                    const text = ['红', '绿', '蓝', '黑']
+                    text.sort(() => Math.random() - 0.5)
+
+                    this.items = Array.from({ length: 24 }, (_, i) => ({
+                        text: text[i % 4],
+                        color: color[Math.floor(Math.random() * 4)]
+                    }))
+                }
+            }
+        })
+        app.mount('#app')
+    </script>
+</body>
+
+</html>
