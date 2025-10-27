@@ -21,7 +21,7 @@
             margin: 100px auto 0;
         }
 
-        .tabel {
+        .table {
             display: flex;
             flex-wrap: wrap;
             width: 500px;
@@ -50,26 +50,50 @@
             padding: 5px 10px;
             cursor: pointer;
         }
+
+        @keyframes shake {
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            75% {
+                transform: translateX(-5px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
+        }
     </style>
 </head>
 
 <body>
     <div id="app" v-cloak>
-        倒计时：<span id="countdown">{{ countdown }}</span>
+        倒计时：<span id="countdown" style="margin-right: 20px;">{{ countdown }}</span>
+        连续成功次数：<span id="successCount">{{ successCount }}</span>
 
-        <div class="tabel">
+        <div class="table" ref="table">
             <div v-for="row in table" :key="row" class="item" :style="{ 
                         color : row.color, 
                         backgroundColor : 
                             currentClick == row.value 
                             ? (isRight == 1 ? 'green' : isRight == 2 ? 'red' : '')
-                            : '' 
+                            : '',
                         }" @click="checkClick(row)">
                 {{ row.value }}
             </div>
         </div>
 
-        <button @click="initTable" style="margin-top: 20px;">重新开始</button>
+        <button @click="reset" style="margin-top: 20px;">重新开始</button><button @click="initTable"
+            style="margin-top: 20px;">继续练习</button>
     </div>
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -85,21 +109,23 @@
                     isRight: 0,
                     currentClick: 0,
                     timer: null,
-                    answer: []
+                    answer: [],
+                    successCount: 0
                 }
             },
 
             created() {
                 this.initTable()
+                this.initListeners()
             },
 
             watch: {
                 answer: {
                     handler(newVal, oldVal) {
-                        console.log(newVal)
                         if (newVal.length == this.size * this.size) {
                             alert(`恭喜你完成了舒尔特表格！耗时：${30 - this.countdown}秒`)
                             clearInterval(this.timer)
+                            this.successCount++
                         }
                     },
                     deep: true
@@ -107,6 +133,25 @@
             },
 
             methods: {
+                initListeners() {
+                    document.addEventListener('keydown', (event) => {
+                        if (event.keyCode == 13) {
+                            this.initTable()
+                        }
+                    })
+                },
+
+                reset() {
+                    this.checkNumber = 1
+                    this.currentClick = 0
+                    this.countdown = 30
+                    this.answer = []
+                    this.successCount = 0
+                    if (this.timer) clearInterval(this.timer)
+                    this.startCountdown()
+                    this.initTable()
+                },
+
                 initTable() {
                     if (this.timer) clearInterval(this.timer)
 
@@ -186,6 +231,7 @@
                             clearInterval(this.timer)
                             // 隐藏数字
                             this.table = []
+                            this.successCount = 0
                             alert(`时间到！你只完成了${this.answer.length}个数字`)
                         }
                     }, 1000)
@@ -194,12 +240,20 @@
                 checkClick(row) {
                     this.currentClick = row.value
 
+                    console.log(row.value)
+                    console.log(this.checkNumber)
+
                     if (row.value == this.checkNumber) {
                         this.checkNumber++
                         this.isRight = 1
                         this.answer.push(row.value)
                     } else {
                         this.isRight = 2
+                        // 错误震动效果
+                        this.$refs.table.style.animation = 'shake 0.5s'
+                        setTimeout(() => {
+                            this.$refs.table.style.animation = ''
+                        }, 500)
                     }
                 }
             }

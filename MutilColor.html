@@ -12,42 +12,163 @@
 
         #app {
             width: 440px;
-            margin: 100px auto 0;
+            margin: 50px auto 0;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .timer {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
         }
 
         .wrap {
             display: flex;
             flex-wrap: wrap;
             width: 440px;
+            margin-bottom: 30px;
+            min-height: 300px;
         }
 
         .item {
             padding: 5px 10px;
             font-size: 50px;
             font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .item.shake {
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translateX(-1px);
+            }
+
+            20%,
+            80% {
+                transform: translateX(2px);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translateX(-4px);
+            }
+
+            40%,
+            60% {
+                transform: translateX(4px);
+            }
+        }
+
+        .color-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .option {
+            width: 50px;
+            height: 50px;
+            border: 3px solid transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .option:hover {
+            transform: scale(1.1);
+        }
+
+        .option.selected {
+            border-color: #666;
+            transform: scale(1.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4163f8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2d4bc9;
+        }
+
+        .message {
+            font-size: 24px;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .failure {
+            background-color: #f2dede;
+            color: #a94442;
         }
     </style>
 </head>
 
 <body>
     <div id="app" v-cloak>
+        <div class="timer">剩余时间: {{ remainingTime }}s</div>
+
+        <div v-if="message" class="message" :class="{ success: isSuccess, failure: !isSuccess }">
+            {{ message }}
+        </div>
+
         <div class="wrap">
-            <div v-for="item in items" :key="item" class="item" :style="{ color: item.color }">
+            <div v-for="(item, index) in items" :key="index" class="item"
+                :style="{ color: item.color, opacity: index < currentIndex ? 0.3 : 1 }"
+                :class="{ shake: index === currentIndex && isShaking }">
                 {{ item.text }}
             </div>
         </div>
-        <button @click="initTable" style="margin-top: 20px;">重新开始</button>
+
+        <!-- 颜色选项 -->
+        <div class="color-options">
+            <div v-for="color in colors" :key="color" class="option" @click="check(color)"
+                :style="{ background: color }" :class="{ selected: selectedColor === color }" :disabled="isGameOver">
+            </div>
+        </div>
+
+        <button @click="initTable" style="margin-top: 20px;" v-if="isGameOver">
+            {{ isSuccess ? '继续游戏' : '重新开始' }}
+        </button>
     </div>
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script>
         const app = Vue.createApp({
-            el: '#app',
             data() {
                 return {
-                    items: [
-
-                    ]
+                    items: [],
+                    colors: ['#db0216', '#00e62d', '#4163f8', '#000000'],
+                    text: ['红', '绿', '蓝', '黑'],
+                    currentIndex: 0,
+                    selectedColor: null,
+                    remainingTime: 30,
+                    timer: null,
+                    isShaking: false,
+                    isGameOver: false,
+                    message: '',
+                    isSuccess: false
                 }
             },
             created() {
@@ -55,14 +176,78 @@
             },
             methods: {
                 initTable() {
-                    const color = ['#db0216', '#00e62d', '#4163f8', '#000000']
-                    const text = ['红', '绿', '蓝', '黑']
-                    text.sort(() => Math.random() - 0.5)
+                    // 重置游戏状态
+                    this.currentIndex = 0
+                    this.selectedColor = null
+                    this.remainingTime = 30
+                    this.isShaking = false
+                    this.isGameOver = false
+                    this.message = ''
+                    this.isSuccess = false
 
-                    this.items = Array.from({ length: 24 }, (_, i) => ({
-                        text: text[i % 4],
-                        color: color[Math.floor(Math.random() * 4)]
+                    // 清除之前的计时器
+                    if (this.timer) {
+                        clearInterval(this.timer)
+                    }
+
+                    // 生成随机项目
+                    const colorList = ['#db0216', '#00e62d', '#4163f8', '#000000']
+                    // 随机排序文字
+                    const shuffledText = [...this.text].sort(() => Math.random() - 0.5)
+
+                    this.items = Array.from({ length: 36 }, (_, i) => ({
+                        text: shuffledText[i % 4],
+                        color: colorList[Math.floor(Math.random() * 4)]
                     }))
+
+                    // 启动计时器
+                    this.startTimer()
+                },
+
+                startTimer() {
+                    this.timer = setInterval(() => {
+                        this.remainingTime--
+                        if (this.remainingTime <= 0) {
+                            clearInterval(this.timer)
+                            this.gameOver(false)
+                        }
+                    }, 1000)
+                },
+
+                check(selectedColor) {
+                    if (this.isGameOver) return
+
+                    this.selectedColor = selectedColor
+                    const currentItem = this.items[this.currentIndex]
+
+                    // 关键修改：检查选择的颜色是否与当前文字的颜色相同
+                    if (selectedColor === currentItem.color) {
+                        // 颜色匹配，进入下一个
+                        this.currentIndex++
+
+                        // 检查是否完成所有项目
+                        if (this.currentIndex >= this.items.length) {
+                            clearInterval(this.timer)
+                            this.gameOver(true)
+                        }
+                    } else {
+                        // 颜色不匹配，添加晃动效果
+                        this.isShaking = true
+                        setTimeout(() => {
+                            this.isShaking = false
+                        }, 500)
+                    }
+                },
+
+                gameOver(isSuccess) {
+                    this.isGameOver = true
+                    this.isSuccess = isSuccess
+                    this.message = isSuccess ? '恭喜你，成功了！' : '时间到，挑战失败！'
+                }
+            },
+            beforeUnmount() {
+                if (this.timer) {
+                    clearInterval(this.timer)
                 }
             }
         })
